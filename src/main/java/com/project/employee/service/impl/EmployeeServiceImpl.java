@@ -44,7 +44,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     public EmployeeResponseDto getEmployee(Long id) {
         return employeeMapper.toEmployeeDto(
-                employeeRepository.findById(id).orElseThrow(() -> new EntityNotFoundException())
+                employeeRepository.findById(id).orElseThrow(EntityNotFoundException::new)
         );
     }
 
