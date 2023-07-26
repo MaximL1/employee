@@ -91,6 +91,8 @@ class EmployeeControllerTest extends AbstractResIT {
         Employee employee4 = setupEmployee();
         employee4.setManager(employee2);
         entityManager.persist(employee4);
+        employee1.setManager(employee4);
+        entityManager.persist(employee1);
 
         MvcResult mvcResult = mockMvc.perform(
                         get(EmployeeApi.ENDPOINT + "/" + employee1.getUniqueCode() + "/subordinates/salarySum")

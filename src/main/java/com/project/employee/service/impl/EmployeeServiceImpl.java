@@ -1,6 +1,5 @@
 package com.project.employee.service.impl;
 
-import java.security.InvalidParameterException;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -12,6 +11,7 @@ import com.project.employee.data.mapper.EmployeeMapper;
 import com.project.employee.data.repository.EmployeeRepository;
 import com.project.employee.service.EmployeeService;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -20,6 +20,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final EmployeeMapper employeeMapper;
+    private String managerCode;
 
     public List<EmployeeResponseDto> saveAll(List<EmployeeRequestDto> employeesDto) {
         List<Employee> employees = employeeMapper.toEmployees(employeesDto);
@@ -28,7 +29,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         try {
             return employeeMapper.toEmployeesDto(employeeRepository.saveAll(employees));
         } catch (Exception ex) {
-            throw new InvalidParameterException(ex.getMessage());
+            throw new IllegalArgumentException(ex.getMessage());
         }
     }
 
@@ -43,7 +44,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     public EmployeeResponseDto getEmployee(Long id) {
         return employeeMapper.toEmployeeDto(
-                employeeRepository.findById(id).orElse(null)
+                employeeRepository.findById(id).orElseThrow(() -> new EntityNotFoundException())
         );
     }
 
@@ -60,9 +61,19 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     private Double getSubordinatesSalarySum(Employee manager) {
+        if (managerCode == null) {
+            managerCode = manager.getUniqueCode();
+        }
         List<Employee> subordinates = employeeRepository.findByManager(manager);
         return subordinates.stream()
-                .mapToDouble(subordinate -> subordinate.getSalary() + getSubordinatesSalarySum(subordinate))
+                .mapToDouble(subordinate ->
+                {
+                    if (subordinate.getUniqueCode() != null && subordinate.getUniqueCode().equals(managerCode)) {
+                        return 0;
+                    } else {
+                        return subordinate.getSalary() + getSubordinatesSalarySum(subordinate);
+                    }
+                })
                 .sum();
     }
 
